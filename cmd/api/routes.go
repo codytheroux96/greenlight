@@ -1,12 +1,12 @@
 package main
 
 import (
-    "net/http"
+	"net/http"
 
-    "github.com/julienschmidt/httprouter"
+	"github.com/julienschmidt/httprouter"
 )
 
-func(app *application) routes() http.Handler {
+func (app *application) routes() http.Handler {
 	router := httprouter.New()
 
 	router.HandlerFunc(http.MethodGet, "/v1/healthcheck", app.healthcheckHandler)
