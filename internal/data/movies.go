@@ -5,8 +5,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/lib/pq"
 	"github.com/codytheroux96/greenlight/internal/validator"
+	"github.com/lib/pq"
 )
 
 type Movie struct {
@@ -64,14 +64,14 @@ func (m MovieModel) Get(id int64) (*Movie, error) {
 	var movie Movie
 
 	err := m.DB.QueryRow(query, id).Scan(
-        &movie.ID,
-        &movie.CreatedAt,
-        &movie.Title,
-        &movie.Year,
-        &movie.Runtime,
-        pq.Array(&movie.Genres),
-        &movie.Version,
-    )
+		&movie.ID,
+		&movie.CreatedAt,
+		&movie.Title,
+		&movie.Year,
+		&movie.Runtime,
+		pq.Array(&movie.Genres),
+		&movie.Version,
+	)
 
 	if err != nil {
 		switch {
