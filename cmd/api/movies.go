@@ -197,5 +197,3 @@ func (app *application) listMoviesHandler(w http.ResponseWriter, r *http.Request
 
 	fmt.Fprintf(w, "%+v\n", input)
 }
-
-// experiment
