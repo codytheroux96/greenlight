@@ -1,6 +1,8 @@
 package data
 
 import (
+	"context"
+	"database/sql"
 	"errors"
 	"time"
 
@@ -8,6 +10,14 @@ import (
 
 	"golang.org/x/crypto/bcrypt"
 )
+
+var (
+	ErrDuplicateEmail = errors.New("duplicate email")
+)
+
+type UserModel struct {
+	DB *sql.DB
+}
 
 type User struct {
 	ID        int64     `json:"id"`
@@ -22,6 +32,30 @@ type User struct {
 type password struct {
 	plaintext *string
 	hash      []byte
+}
+
+func (m UserModel) Insert(user *User) error {
+	query := `
+        INSERT INTO users (name, email, password_hash, activated) 
+        VALUES ($1, $2, $3, $4)
+        RETURNING id, created_at, version`
+	
+	args := []any{user.Name, user.Email, user.Password.hash, user.Activated}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	err := m.DB.QueryRowContext(ctx, query, args...).Scan(&user.ID, &user.CreatedAt, &user.Version)
+    if err != nil {
+        switch {
+        case err.Error() == `pq: duplicate key value violates unique constraint "users_email_key"`:
+            return ErrDuplicateEmail
+        default:
+            return err
+        }
+    }
+
+    return nil
 }
 
 func (p *password) Set(plaintextPassword string) error {
@@ -51,8 +85,8 @@ func (p *password) Matches(plaintextPassword string) (bool, error) {
 }
 
 func ValidateEmail(v *validator.Validator, email string) {
-    v.Check(email != "", "email", "must be provided")
-    v.Check(validator.Matches(email, validator.EmailRX), "email", "must be a valid email address")
+	v.Check(email != "", "email", "must be provided")
+	v.Check(validator.Matches(email, validator.EmailRX), "email", "must be a valid email address")
 }
 
 func ValidatePasswordPlaintext(v *validator.Validator, password string) {
@@ -63,7 +97,7 @@ func ValidatePasswordPlaintext(v *validator.Validator, password string) {
 
 func ValidateUser(v *validator.Validator, user *User) {
 	v.Check(user.Name != "", "name", "must be provided")
-    v.Check(len(user.Name) <= 500, "name", "must not be more than 500 bytes long")
+	v.Check(len(user.Name) <= 500, "name", "must not be more than 500 bytes long")
 
 	ValidateEmail(v, user.Email)
 
